@@ -40,7 +40,9 @@ Mapstraction: {
 				
 			// deal with click
 			google.maps.event.addListener(map, 'click', function(location){
-				me.clickHandler(location.latLng.lat(),location.latLng.lng(),location,me);
+				me.click.fire({'location': 
+					new mxn.LatLonPoint(location.latLng.lat(),location.latLng.lng())
+				});
 			});
 
 			// deal with zoom change
@@ -162,12 +164,14 @@ Mapstraction: {
 
 	addPolyline: function(polyline, old) {
 		var map = this.maps[this.api];
-		return polyline.toProprietary(this.api);
+		var gpoly = polyline.toProprietary(this.api);
+		gpoly.setMap(map);
+		return gpoly;
 	},
 
 	removePolyline: function(polyline) {
-		var map = this.maps[this.api];		
-		// TODO: Add provider code
+		var map = this.maps[this.api];
+		polyline.proprietary_polyline.setMap(null);
 	},
 	   
 	getCenter: function() {
@@ -450,9 +454,30 @@ Marker: {
 },
 
 Polyline: {
-
 	toProprietary: function() {
-			throw 'Not implemented';
+		var pts = this.points;
+		var gpts = [];
+		for (var i=0; i<pts.length; i++) {
+		  gpts.push(pts[i].toProprietary(this.api));
+		}
+		if (this.closed || pts[0].equals(pts[pts.length - 1])) {
+		  return new google.maps.Polygon({
+		    path: gpts,
+    		strokeColor: this.color,
+   			strokeOpacity: this.opacity,
+    		strokeWeight: this.width,
+    		fillColor: this.fillColor || "#5462E3",
+    		fillOpacity: this.opacity || "0.3"
+		  });
+		}
+		else {
+		  return new google.maps.Polyline({
+		    path: gpts,
+    		strokeColor: this.color,
+   			strokeOpacity: this.opacity,
+    		strokeWeight: this.width
+		  });
+		}
 	},
 	
 	show: function() {
